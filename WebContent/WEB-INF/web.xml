@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" id="WebApp_ID" version="3.1">
+  <display-name>SelfImprovement</display-name>
+  <welcome-file-list>
+    <welcome-file>sm/login/login.jsp</welcome-file>
+  </welcome-file-list>
+  
+  <!-- 设置编码  最好放在web.xml的最前面，拦截有顺序，如果放在后面的话容易拦截不到。--> 
+	 <filter>
+        <filter-name>encodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>encodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+  <!--加载Spring以及spring security的配置文件-->
+    <context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath:spring.xml,classpath:spring-security.xml</param-value>
+	</context-param>
+
+	<!-- 配置springsecurity 的Session监听，主要实现Session固化攻击防御，Session并发控制 -->
+<listener>
+<listener-class>org.springframework.security.web.session.HttpSessionEventPublisher</listener-class>
+</listener>	
+	<!--   添加spring监听器 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	
+	<!-- Spring Security3.1 的权限过滤 ,要放在SpringMVC的DispatcherServlet配置前面--> 
+	<!-- 这个过滤器其实是一个DelegatingFilterProxy，这个过滤器里没有实现过滤器的任何
+			逻辑。DelegatingFilterProxy 做的事情是代理Filter 的方法，从application context
+			里获得bean。这让bean 可以获得spring web application context 的生命周期支持，
+			使配置较为轻便。bean 必须实现javax.servlet.Filter 接口，它必须和filter-name 里
+			定义的名称是一样的 -->
+    <filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+	
+	<!--配置SpringMVC的核心控制器-->
+		<servlet>
+		<servlet-name>springmvc</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath:spring-mvc.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>springmvc</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+	
+
+	 <session-config>
+	 <session-timeout>20</session-timeout>
+	 <!-- 设置http-only属性，让客户端访问不到cookies -->
+	<!--  设置之后，服务器端将拿不到Session，及Session为空，
+	                 经过SpringSecurity过滤器链时，会视为无效Session，会自动创建新的Session
+ 	  <cookie-config>
+	    <http-only>true</http-only>
+	    <secure>true</secure>
+	 </cookie-config> -->
+	 
+	 <!-- 强制使用https请求 -->
+	 </session-config>
+	 <security-constraint>
+     <web-resource-collection>
+       <web-resource-name>SimulationSecurity3</web-resource-name>
+       <url-pattern>/*</url-pattern>
+     </web-resource-collection>
+      <user-data-constraint>
+        <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+     </user-data-constraint>
+    </security-constraint> 
+	 
+    <error-page>
+        <error-code>403</error-code>
+        <location>/error.jsp</location>
+    </error-page>
+</web-app>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="role" >
+<!-- 定义一个简单类型的role结果集-->
+  <resultMap  type="com.newtouch.entitys.Role" id="RoleMap">
+    <id column="role_id" property="roleId" jdbcType="INTEGER" />
+    <result column="role_name" property="roleName" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="VARCHAR" />
+    <result column="role_code" property="roleCode" jdbcType="VARCHAR" />
+  </resultMap>
+  <!-- 定义一个完整类型的Role，里面包含Permission集合，使用继承的方式继承RoleMap -->
+  <resultMap type="com.newtouch.entitys.Role" id="RoleCluPermissionMap" extends="RoleMap">
+   <collection property="permissions" ofType="com.newtouch.entitys.Permission">
+     <id column="id" property="id" javaType="Integer"/>
+    <result column="pname" property="pname"/>
+    <result column="permissioncode" property="permissioncode"/>
+    <result column="permission_uri" property="permission_uri"/>
+    </collection>
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    role_id, role_name, status, role_code
+  </sql>
+  
+  <select id="query" resultMap="RoleCluPermissionMap">
+     SELECT  sr.role_id  ,
+            sr.role_name ,
+            sr.status ,
+            sr.role_code ,
+            sp.id ,
+            sp.pname ,
+            sp.permissioncode ,
+            sp.permission_uri
+            FROM sys_role sr 
+         LEFT JOIN sys_role_permission  srp ON srp.roleId = sr.role_id
+         LEFT JOIN sys_permissions sp ON srp.pid = sp.id             
+         <!-- WHERE sr.role_id = 10000  -->
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from sys_role
+    where role_id = #{roleId,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.newtouch.entitys.Role" >
+    insert into sys_role (role_id, role_name, status, 
+      role_code)
+    values (#{roleId,jdbcType=INTEGER}, #{roleName,jdbcType=VARCHAR}, #{status,jdbcType=BIT}, 
+      #{roleCode,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.newtouch.entitys.Role" >
+    insert into sys_role
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="roleId != null" >
+        role_id,
+      </if>
+      <if test="roleName != null" >
+        role_name,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="roleCode != null" >
+        role_code,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="roleId != null" >
+        #{roleId,jdbcType=INTEGER},
+      </if>
+      <if test="roleName != null" >
+        #{roleName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=BIT},
+      </if>
+      <if test="roleCode != null" >
+        #{roleCode,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.newtouch.entitys.Role" >
+    update sys_role
+    <set >
+      <if test="roleName != null" >
+        role_name = #{roleName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=BIT},
+      </if>
+      <if test="roleCode != null" >
+        role_code = #{roleCode,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where role_id = #{roleId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.newtouch.entitys.Role" >
+    update sys_role
+    set role_name = #{roleName,jdbcType=VARCHAR},
+      status = #{status,jdbcType=BIT},
+      role_code = #{roleCode,jdbcType=VARCHAR}
+    where role_id = #{roleId,jdbcType=INTEGER}
+  </update>
+</mapper>

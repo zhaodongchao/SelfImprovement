@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd">
+ 
+    <!-- 配置springmvc的视图解析器 -->
+   <bean id="resourceViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+   <property name="prefix"><value>/</value></property>
+   <property name="suffix"><value>.jsp</value></property>
+   </bean>
+   
+   
+   	<!--  
+		default-servlet-handler 将在 SpringMVC 上下文中定义一个 DefaultServletHttpRequestHandler,
+		它会对进入 DispatcherServlet 的请求进行筛查, 如果发现是没有经过映射的请求, 就将该请求交由 WEB 应用服务器默认的 
+		Servlet 处理. 如果不是静态资源的请求，才由 DispatcherServlet 继续处理
+		一般 WEB 应用服务器默认的 Servlet 的名称都是 default.
+		若所使用的 WEB 服务器的默认 Servlet 名称不是 default，则需要通过 default-servlet-name 属性显式指定
+	-->
+	<mvc:default-servlet-handler/>
+	
+	<!-- 使用此标签后，会自动注册ExceptionHandlerExceptionResolver，用于异常的处理 -->
+	<mvc:annotation-driven/>
+	
+   <!-- 自动扫描bean，把作了注解的类转换为bean , 存在于springMVC的ioc容器中-->  
+	<context:component-scan base-package="com.newtouch.handlers"/>
+	
+	<!-- 配置拦截器 ,防止二次提交-->
+<!--    <mvc:interceptors>
+      <mvc:interceptor>
+   指定 ReSubmitInterceptor只作用于"login/login" 这个请求返回的是你有token的页面
+      <mvc:mapping path="/login/goLoginPage"/>
+      <bean class="com.newtouch.interceptors.TokenHandlerInterceptor"></bean>
+    
+   </mvc:interceptor> -->
+   
+     <!-- 这个是提交请求时，对提交页面带过来的token值进行验证，如果相同则标示是第一次请求，通过，然后移除Session里面原来的token值
+         重新生成一个token值，放入Session，二次访问时，；两个token值就不一样，不让过 -->
+  <!--    <mvc:interceptor>
+     <mvc:mapping path="/login/judgeLogin"/>
+     <bean class="com.newtouch.interceptors.TokenValidInterceptor"></bean>
+   
+      </mvc:interceptor>
+   </mvc:interceptors>
+    -->
+   
+</beans>

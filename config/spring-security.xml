@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+<!-- 手动配置SpringSecurity3.1的拦截过滤器，并手动注入认证管理器，和权限角色匹配器 -->	
+
+
+<security:debug/>
+
+	<!-- 自定义的过滤器链 
+	<bean id="filterChainProxy" class="org.springframework.security.web.FilterChainProxy"> 
+		<security:filter-chain-map path-type="ant" request-matcher="ant"> <security:filter-chain 
+		filters=""/> </security:filter-chain-map> </bean> -->
+
+<!-- 配置认证管理器, 指定能登陆的用户,密码,权限,状态
+     authentication-manager:注册了一个AuthenticationManager实例
+     authentication-provider：注册了一个AuthenticationProvider实例，默认为DaoAuthenticationProvider 读取用户信息，从UserDetailsService 中，比较用户名/
+             密码，来进行用户登录。
+ -->
+<security:authentication-manager alias="myAuthenticationManager">
+ <security:authentication-provider user-service-ref="customUserDetailsService">
+ <!--  <security:user-service>
+      以硬编码的方式配置认证用户密码。 authorities：表示此用户的相应的权限，默认以ROLE_**形式
+    <security:user name="MrChao"  password="123" authorities="ROLE_admin"/>
+    </security:user-service>  --> 
+    <security:password-encoder ref="Md5Encoder">
+    <security:salt-source system-wide="newtouch"/>
+    </security:password-encoder>
+            </security:authentication-provider>
+</security:authentication-manager>
+
+
+<!-- http，表示处理http协议的请求
+     auto-config="true"相当于向配置页面添加以下三个标签  
+       <form-login />
+       <http-basic />
+       <logout />
+ -->
+ <!-- 配置不拦截的资源 -->
+ 
+ <security:http pattern="/images/**/*" security="none"/>
+ <security:http pattern="/css/*.css" security="none"/>
+ <security:http pattern="/plugins/**/*" security="none"/>
+ <security:http pattern="/sm/**/*.js" security="none"/>
+ <security:http pattern="/*.jsp" security="none"/>
+ <security:http pattern="/sm/login/login.jsp" security="none"/>
+ <security:http pattern="/createVerifyCode/code" security="none"/>
+ 
+ 
+  <bean  id="customLoginFilter" class="com.newtouch.securitys.login.CustomUsernamePasswordAuthenticationFilter">
+         <property name="authenticationManager" ref="myAuthenticationManager"></property>
+          <!-- 自定义登录成功后的处理handler -->
+         <property name="authenticationSuccessHandler">
+             <bean class="com.newtouch.securitys.login.CustomSavedRequestAwareAuthenticationSuccessHandler">
+                  <property name="defaultTargetUrl" value="/sm/login/main.jsp"></property>
+                  <property name="alwaysUseDefaultTargetUrl" value="true"></property>
+             </bean>
+         </property>
+         <!-- 自定义登录失败后的处理handler -->
+         <property name="authenticationFailureHandler">
+            <bean class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+                  <property name="defaultFailureUrl" value="/sm/login/login.jsp"></property>
+            </bean>
+         </property>
+         <property name="sessionAuthenticationStrategy" ref="sas"></property>
+  </bean>
+  
+  <bean id="sas" class="org.springframework.security.web.authentication.session.ConcurrentSessionControlStrategy">
+                    <constructor-arg name="sessionRegistry" ref="sessionRegistry"></constructor-arg>
+                    <property name="maximumSessions" value="1"><!-- 默认值就为1，可以不设置 --></property>
+                    <property name="exceptionIfMaximumExceeded" value="true"></property>
+               </bean>
+  
+
+  
+  <bean id="sessionRegistry" class="org.springframework.security.core.session.SessionRegistryImpl"></bean>
+ 
+  <bean id="customLoginUrlAuthenticationEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+    <constructor-arg name="loginFormUrl" value="/sm/login/login.jsp"></constructor-arg>
+  </bean>
+  
+  <!-- entry-point-ref :未验证用户的登录入口  -->
+<security:http auto-config="false" path-type="ant" entry-point-ref="customLoginUrlAuthenticationEntryPoint">
+ 
+  
+      <security:intercept-url pattern="/sm/login/main.jsp" access="ROLE_ADMIN" />
+  
+<!-- 配置登陆表单，springsecurity自带的登陆界面太丑了.此标签标示向过滤器链中添加了UsernamePasswordAuthenticationFilter过滤器， -->
+<!--    <security:form-login login-page="/sm/login/login.jsp" default-target-url="/sm/login/main.jsp" authentication-failure-url="/accessDenied.jsp" always-use-default-target="true"/>-->
+  
+  <!-- 自定义登陆filter，替换默认的Filter（UsernamePasswordAuthenticationFilter），
+                   1,配置自定义custom-filter时必须蔣auto-config="false"，
+                   2,auto-config="true"时会向过滤器链中添加默认的登陆过滤器（UsernamePasswordAuthenticationFilter）会报已经存在同样的过滤器错误   
+                   3, 必须 在<secuity:http>元素里面添加entry-point-ref（Allows a customized AuthenticationEntryPoint to be set on the ExceptionTranslationFilter.）
+                                                                后面接的是自定义的AuthenticationEntryPoint的实现类
+                   --> 
+ <security:custom-filter ref="customLoginFilter" position="FORM_LOGIN_FILTER"/> 
+ 
+ 
+  <!-- 自定义FilterSecurityInterceptor放在SpringSecurity的拦截链中的FilterSecurityInterceptor前面 执行
+       Spring Sercurity要从数据库中获取用户、权限、资源来实现权限管理，需要自定义过滤器，
+	     　并且该过滤器必须在spring Security执行FILTER_SECURITY_INTERCEPTOR过滤器之前执行，
+	    　 因为该框架实现权限管理实质就是在执行action之前先执行它框架中的为权限管理制定的一系列Fliter。
+	　　我们自定的这个SercurityFilter类要继承AbstractSecurityInterceptor 接口和Filter类（负责传递一系列的Filter）,
+	　　因为我们是从数据库中获取权限验证的数据，所以还要重写FilterInvocationSecurityMetadataSource 接口，
+	   AccessDecisionManager 接口，UserDetailsService 接口，只要重写了这3个接口，
+	       然后再spring配置文件中做相应的配置，项目启动启动后，我们进行资源请求，就自动会去执行我们重定义的类进行权限判断。
+       -->                                                                 
+  <security:custom-filter ref="customFilterSecurityInterceptor"  before="FILTER_SECURITY_INTERCEPTOR"/>
+
+    
+ <!-- 控制一个用户能同事操作的Session数量，并指定Session失效后跳转的页面 
+ 首先，你需要把下面的监听器添加到你的web.xml 文件里，让SpringSecurity 获得session 生存周期事件：
+  <listener> <listener-class>org.springframework.security.web.session.HttpSessionEventPublisher</listener-class> </listener>
+   
+   session-fixation-protection：Session固定保护
+   migrateSession - 创建一个新session，把原来session 中所有属性复制到新session中。这是默认值。
+   none - 什么也不做，继续使用原来的session。
+   newSession - 创建一个新的“干净的”session，不会复制session 中的数据。
+   
+   invalid-session-url :Session超时时，当你再提交请求时会重定向到的页面
+   error-if-maximum-exceeded="true" 防止同一个用户第二次登陆，
+   -->
+  <!-- <security:session-management session-fixation-protection="migrateSession" invalid-session-url="/sm/login/login.jsp" >
+      <security:concurrency-control max-sessions="1" expired-url="/invalid.jsp" />
+  </security:session-management> -->
+  <!--设置session-management，session-fixation-protection不等于none 。表示向过滤器链中添加 SessionManagementFilter   
+                 设置concurrency-control 表示向过滤器链中添加ConcurrentSessionFilter
+        -->
+   <security:session-management session-fixation-protection="migrateSession" invalid-session-url="/timeout.jsp">
+    <security:concurrency-control session-registry-ref="sessionRegistry"/>
+     </security:session-management>
+  <!-- 注销当前用户 -->
+  <security:logout delete-cookies="JSESSIONID" invalidate-session="true" logout-success-url="/" logout-url="/loginout"/>
+</security:http>
+
+</beans>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+    
+<mapper namespace="user">
+  <resultMap type="User" id="simpleUserMap">
+  <id column="user_id" property="user_id"/>
+   <result column="username" property="username"/>  
+   <result column="password" property="password"/>
+   <result column="nickname" property="nickname"/>
+   <result column="age"      property="age"/>
+   <result column="sex"      property="sex"/>
+   <result column="status"   property="status"/>
+   <result column="login_err_count" property="login_err_count"/>
+   <result column="birthday"   property="birthday" javaType="Date"/>
+   <result column="telPhone"   property="telPhone"/>
+   <result column="company"   property="company"/>
+   <result column="address"   property="address"/>
+   <result column="mail"   property="mail"/>
+   <result column="register_time"   property="register_time"/>
+   <result column="last_login_time"   property="last_login_time"/>
+   <result column="parentId"   property="parentId"/> 
+  </resultMap>
+  
+  <resultMap type="User" id="userMap" extends="simpleUserMap">
+  <collection property="roles" ofType="Role">
+   <id column="role_id" property="roleId" jdbcType="INTEGER" />
+    <result column="role_name" property="roleName" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="VARCHAR" />
+    <result column="role_code" property="roleCode" jdbcType="VARCHAR" />
+  </collection>
+  </resultMap>
+  
+  <sql id="SelectParams">
+       user_id,
+       username ,   
+       password ,
+       nickname ,
+       age ,
+       sex ,
+       status ,
+       login_err_count ,
+       birthday,
+       telPhone,
+       company,
+       address,
+       mail,
+       register_time,
+       last_login_time,
+       parentId
+  </sql>
+  <!-- id:statmentId parameterType:输入参数的类型；resultType：查询换回结果单条记录的的类型 
+        当输入参数类型为简单参数类型时，可以直接使用#{value}
+       当输入参数为对象如user时，sql里面就直接写#{User的属性名}     
+   -->
+   <!-- 简单查询，没有级联role -->
+    <select id="findUser" parameterType="User" resultMap="simpleUserMap">
+    select <include refid="SelectParams" /> 
+           from sys_user 
+           <if test="username != null">where  username= #{username} </if>
+           <if test="password !=null and username!=null"> and password=#{password}</if>
+    </select>
+    
+    <!-- User Role之间的级联查询 -->
+    <select id="query" resultMap="userMap" parameterType="User">
+        
+     SELECT  su.user_id ,
+             su.username,
+             su.password,
+             su.nickname,
+             su.age,
+             su.sex,
+             su.status,
+             su.login_err_count,
+             sr.role_id,
+             sr.role_name,
+             sr.role_code,
+             sr.status
+           FROM sys_user su 
+           LEFT JOIN  sys_user_role sur ON su.user_id = sur.userId
+           LEFT JOIN sys_role sr ON sr.role_id = sur.roleId 
+           <if test="username!=null">
+            WHERE su.username=#{username}
+           </if>
+    </select>
+    </mapper>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="menu">
+
+  <resultMap id="BaseResultMap" type="Menu" >
+    <id column="id" property="id" jdbcType="VARCHAR" />
+    <result column="menu_name" property="menu_name" jdbcType="VARCHAR" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="isleaf" property="isleaf" jdbcType="BIT" />
+    <result column="created_time" property="created_time" jdbcType="DATE"/>
+    <result column="parentId" property="parentId" jdbcType="VARCHAR" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="Menu" extends="BaseResultMap" >
+    <result column="menu_url" property="menuUrl" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  
+  <sql id="SelectParams">
+        id  ,
+      isleaf ,
+      level ,
+      menu_name,
+      menu_url,
+      created_time,
+      parentId 
+  </sql>
+  <!-- id:statmentId parameterType:输入参数的类型；resultType：查询换回结果单条记录的的类型 -->
+    <select id="findMenu" parameterType="String" resultType="com.newtouch.entitys.Menu">
+    select <include refid="SelectParams" /> 
+           from sys_menu 
+           where parentId = #{value}
+    </select>
+    
+    
+    <select id="query" parameterType="Menu" resultMap="BaseResultMap" >
+    select <include refid="SelectParams"/>
+            from sys_menu
+            <if test="parentId !=null ">
+            where parentId = #{parentId}
+            </if>
+    </select>
+    <delete id="deleteByCondition" parameterType="Menu" >
+    delete from sys_menu
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="Menu" >
+    insert into sys_menu (id, menu_name, level, 
+      isleaf, parentId, menu_url
+      )
+    values (#{id,jdbcType=VARCHAR}, #{menuName,jdbcType=VARCHAR}, #{level,jdbcType=INTEGER}, 
+      #{isleaf,jdbcType=BIT}, #{parentid,jdbcType=VARCHAR}, #{menuUrl,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="Menu" >
+    insert into sys_menu
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="menuName != null" >
+        menu_name,
+      </if>
+      <if test="level != null" >
+        level,
+      </if>
+      <if test="isleaf != null" >
+        isleaf,
+      </if>
+      <if test="parentid != null" >
+        parentId,
+      </if>
+      <if test="menuUrl != null" >
+        menu_url,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="menuName != null" >
+        #{menuName,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        #{level,jdbcType=INTEGER},
+      </if>
+      <if test="isleaf != null" >
+        #{isleaf,jdbcType=BIT},
+      </if>
+      <if test="parentid != null" >
+        #{parentid,jdbcType=VARCHAR},
+      </if>
+      <if test="menuUrl != null" >
+        #{menuUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="Menu" >
+    update sys_menu
+    <set >
+      <if test="menuName != null" >
+        menu_name = #{menuName,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        level = #{level,jdbcType=INTEGER},
+      </if>
+      <if test="isleaf != null" >
+        isleaf = #{isleaf,jdbcType=BIT},
+      </if>
+      <if test="parentid != null" >
+        parentId = #{parentid,jdbcType=VARCHAR},
+      </if>
+      <if test="menuUrl != null" >
+        menu_url = #{menuUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="Menu" >
+     update sys_menu
+		    set menu_name = #{menuName,jdbcType=VARCHAR},
+		        level = #{level,jdbcType=INTEGER},
+		        isleaf = #{isleaf,jdbcType=BIT},
+		        parentId = #{parentid,jdbcType=VARCHAR},
+		        menu_url = #{menuUrl,jdbcType=LONGVARCHAR}
+		    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="Menu" >
+    update sys_menu
+           set menu_name = #{menuName,jdbcType=VARCHAR},
+		       level = #{level,jdbcType=INTEGER},
+		       isleaf = #{isleaf,jdbcType=BIT},
+		       parentId = #{parentid,jdbcType=VARCHAR}
+           where id = #{id,jdbcType=VARCHAR}
+  </update>
+    
+    </mapper>
